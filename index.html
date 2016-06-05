@@ -1,0 +1,235 @@
+<!doctype html>
+<head>
+  <meta charset="utf-8">
+
+  <title>Ticket Manager</title>
+  <meta name="description" content="My Parse App">
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+  <script type="text/javascript" src="http://www.parsecdn.com/js/parse-latest.js"></script>
+</head>
+
+<body>
+  
+  <div id="main">
+    <h1>Ticket Manager</h1>
+
+    <div class="car-form-area">
+      <form class="car-form">
+        <input class= "car-name" type="text" placeholder="Car name...">
+        <button id="submit-car">Submit</button>
+      </form>
+    </div>
+
+    <div class="car-list-area">
+      <table class="car-list">
+      </table>
+    </div>
+
+
+  <script type="text/javascript">
+    Parse.initialize("MyAppId", 'unused');
+    Parse.serverURL = 'http://localhost:1337/parse'
+    
+    <!-- var TestObject = Parse.Object.extend("TestObject"); -->
+    <!-- var testObject = new TestObject(); -->
+    <!--   testObject.save({foo: "bar"}, { -->
+      <!--   success: function(object) { -->
+        <!--     $(".success").show(); -->
+          <!--   }, -->
+          <!--   error: function(model, error) { -->
+            <!--     $(".error").show(); -->
+              <!--   } -->
+              <!-- }); -->
+    $("#submit-car").click(function(e){
+      e.preventDefault();
+      console.log("submit car");
+      SubmitCar();
+    });
+
+ListCars();
+
+function SubmitCar(){
+  console.log("function");
+  console.log($(".car-name").val());
+  var CarObj = Parse.Object.extend("CarObj");
+  var carObj = new CarObj();
+  carObj.set("name", $('.car-name').val());
+  carObj.save(null, {
+    success: function(){
+      console.log("Saved.");
+      ListCars();
+    },
+    error: function(e){
+      console.log("Error: " + e);
+    }
+  })
+
+}
+
+function ListCars(){
+  console.log("list cars");
+  var CarObj = Parse.Object.extend("CarObj");
+  var query = new Parse.Query(CarObj);
+  query.find({
+    success: function(results){
+      ShowCars(results);
+    },
+    error: function(e){
+      console.log("error: " + e);
+    }
+  });
+
+  function ShowCars(cars){
+    $('.car-list').html('');
+    for (var i = 0; i < cars.length; ++i){
+      $el = CarListItem(cars[i]);
+      $('.car-list').append($el);
+    }
+  }
+
+  function CarListItem(car){
+    var $carName = $('<td>').addClass('car-name').html(car.get('name'));
+    var $addTicketButton = $('<button>').
+      addClass('add-ticket-button').
+      click(function(e){
+        e.preventDefault();
+        DisplayAddTicketForm($(this.parentElement), car.id);
+      }).
+    html('add ticket');
+    var $addTicketCell = $('<td>').append($addTicketButton);
+    var $viewTicketButton = $('<button>').
+      addClass('view-ticket-button').
+      click(function(e){
+        e.preventDefault();
+        DisplayViewTickets($(this.parentElement), car.id);
+      }).
+    html('view tickets');
+    var $viewTicketCell = $('<td>').append($viewTicketButton);
+    var $row = $('<tr>').
+      append($carName).
+      append($addTicketButton).
+      append($viewTicketButton);
+    return $row;
+  }
+
+  function AddTicketForm(carId){
+    console.log('click');
+    var $form = $('<form>');
+    var $input = $('<input>').
+      attr('type', 'text').
+      attr('placeholder', 'Ticket Number...').
+      attr('id', 'ticket-number');
+    var $button = $('<button>').
+      addClass('add-ticket-button').
+      data('carId', carId).
+      click(function(e){
+        e.preventDefault();
+        AddTicket(carId, $('#ticket-number').val());
+        this.parentElement.parentElement.remove();
+      }).
+    html('add ticket');
+    $form.append($input).append($button);
+    return $form;
+  }
+
+  function DisplayAddTicketForm($tr, carId){
+    var $row = $('<tr>').
+      addClass('sub-row');
+    var $cell = $('<td>').
+      attr('colspan', 3).
+      append(AddTicketForm(carId));
+    $row.append($cell);
+    $('.sub-row').remove();
+    $tr.after($row);
+  }
+
+  function AddTicket(carId, ticketNumber){
+    var CarObj = Parse.Object.extend("CarObj");
+    var carQuery = new Parse.Query(CarObj);
+    var carObj;
+    carQuery.get(carId, {
+      success: function(car){
+        console.log("found car");
+        var TicketObj = Parse.Object.extend("TicketObj");
+        var ticketObj = new TicketObj();
+        ticketObj.set("number", ticketNumber);
+        ticketObj.set("car", car);
+        ticketObj.save(null, {
+          success: function(ticket){
+            console.log('ticket saved');
+          },
+          error: function(e){
+            console.log('error saving ticket: ' + e);
+          }
+        })
+      },
+      error: function(e){
+        console.log('error finding car: ' + e);
+      }
+    });
+  }
+
+  <!-- function SaveTicket(carObj, ticketNumber){ -->
+  <!--   var TicketObj = Parse.Object.extend("TicketObj"); -->
+  <!--   var ticketObj = new TicketObj(); -->
+  <!--   ticketObj.set("number", ticketNumber); -->
+  <!--   ticketObj.set("car", carObj); -->
+  <!--   ticketObj.save(null, { -->
+  <!--     success: function(){ -->
+  <!--       console.log('ticket saved'); -->
+  <!--     }, -->
+  <!--     error: function(e){ -->
+  <!--       console.log('error saving ticket: ' + e); -->
+  <!--     } -->
+  <!--   }); -->
+  <!-- } -->
+
+  function DisplayViewTickets($tr, carId){
+    console.log("display tickets");
+    var CarObj = Parse.Object.extend("CarObj");
+    var TicketObj = Parse.Object.extend("TicketObj");
+    var carQuery = new Parse.Query(CarObj);
+    var ticketQuery = new Parse.Query(TicketObj);
+    carQuery.get(carId, {
+      success: function(car){
+        console.log("found car");
+        ticketQuery.equalTo("car", car); 
+        ticketQuery.find({
+          success: function(results){
+            console.log(results);
+            AppendTickets($tr, results);
+          },
+          error: function(e){
+            console.log("Error getting tickets: " +e);
+          }
+        })
+      },
+      error: function(e){
+        console.log('error finding car: ' + e);
+      }
+    });
+  }
+
+  function AppendTickets($tr, tickets){
+    var $row = $('<tr>').addClass('sub-row');;
+    var $cell = $('<td>').attr('colspan', 3);
+    var $ticketList = $('<ul>');
+    for (var i = 0; i < tickets.length; ++i){
+      $listItem = $('<li>').html(tickets[i].get('number'));
+      $ticketList.append($listItem);
+    }
+    $cell.append($ticketList);
+    $row.append($cell);
+    $('.sub-row').remove();
+    $tr.after($row);
+  }
+
+}
+
+  </script>
+</body>
+
+</html>
