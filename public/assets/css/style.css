@@ -236,3 +236,23 @@ a:visited {
   content: "";
 }
 
+.car-form-area{
+  border: thin black solid;
+  padding: 1em;
+  width: 300px;
+  margin-bottom: 20px;
+}
+
+.car-list{
+  border: thin black solid;
+  width: 290px;
+  margin-left: 10px;
+  padding: .5em;
+}
+
+.car-list td{
+  padding: 5px;
+}
+.car-name {
+  padding-right: 60px;
+}
